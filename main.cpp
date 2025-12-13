@@ -175,6 +175,24 @@ string formatFileFlags(int flags)
     return out;
 }
 
+bool isWar3Map(const std::string& filename) {
+    // Find the position of the last dot in the filename
+    size_t dotPosition = filename.rfind('.');
+    if (dotPosition == std::string::npos) {
+        // No dot found in the filename, so no extension
+        return false;
+    }
+
+    // Extract the extension
+    std::string extension = filename.substr(dotPosition);
+
+    // Convert to lowercase for case-insensitive comparison
+    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+    // Check if the extension matches .w3m or .w3x
+    return extension == ".w3m" || extension == ".w3x";
+}
+
 int main(int argc, char** argv)
 {
     HANDLE hArchive;
@@ -202,11 +220,11 @@ int main(int argc, char** argv)
                 case OPT_HELP:
                     showUsage(argv[0]);
                     return 0;
-                
+
                 case OPT_APPLYLIST:
                     strApplyListFile = args.OptionArg();
                     break;
-                
+
                 case OPT_LISTFILE:
                     strListFile = args.OptionArg();
                     break;
@@ -267,9 +285,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    
+
     cout << "Opening '" << args.File(0) << "'..." << endl;
-    if (!SFileOpenArchive(args.File(0), 0, MPQ_OPEN_READ_ONLY, &hArchive))
+    bool isMap = isWar3Map(args.File(0));
+    if (!SFileOpenArchive(args.File(0), 0, MPQ_OPEN_READ_ONLY | (isMap ? MPQ_OPEN_FORCE_MPQ_V1 : 0) , &hArchive))
     {
         cerr << "Failed to open the file '" << args.File(0) << "'" << endl;
         return -1;
@@ -295,8 +314,8 @@ int main(int argc, char** argv)
             return -1;
         }
     }
-    
-    
+
+
     // Apply the patches
     if (!patches.empty())
     {
@@ -330,7 +349,7 @@ int main(int argc, char** argv)
         }
     }
 
-    
+
     // Search the files
     if (!strSearchPattern.empty())
     {
@@ -349,7 +368,7 @@ int main(int argc, char** argv)
 
             SFILE_FIND_DATA findData;
             HANDLE handle = SFileFindFirstFile(hArchive, strSearchPattern.c_str(), &findData, 0);
-        
+
             if (handle)
             {
                 cout << endl;
@@ -391,7 +410,7 @@ int main(int argc, char** argv)
         for (iter = searchResults.begin(), iterEnd = searchResults.end(); iter != iterEnd; ++iter)
         {
             string strDestName = strDestination;
-            
+
             if (bUseFullPath)
             {
                 if (bLowerCase){
