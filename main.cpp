@@ -95,9 +95,10 @@ void showUsage(const std::string& strApplicationName)
          << "                             in FILE" << endl
          << "    --search <PATTERN>," << endl
          << "    -s <PATTERN>:            Search for the list of files corresponding to a PATTERN" << endl
-         << "                             in the archive" << endl
+         << "                             in the archive. Can be specified multiple times." << endl
          << "    --extract <PATTERN>," << endl
-         << "    -e <PATTERN>:            Same as --search, but the found files are also extracted" << endl
+         << "    -e <PATTERN>:            Same as --search, but the found files are also extracted." << endl
+         << "                             Can be specified multiple times." << endl
          << "    --dest <PATH>," << endl
          << "    -o <PATH>:               The folder where the files are extracted (default: the" << endl
          << "                             current one)" << endl
@@ -200,7 +201,7 @@ int main(int argc, char** argv)
     string strListFile;
     string strPatchPrefix;
     vector<string> patches;
-    string strSearchPattern;
+    vector<string> searchPatterns;
     string strDestination = ".";
     vector<tSearchResult> searchResults;
     bool bExtraction = false;
@@ -248,11 +249,11 @@ int main(int argc, char** argv)
                 }
 
                 case OPT_SEARCH:
-                    strSearchPattern = args.OptionArg();
+                    searchPatterns.push_back(args.OptionArg());
                     break;
 
                 case OPT_EXTRACT:
-                    strSearchPattern = args.OptionArg();
+                    searchPatterns.push_back(args.OptionArg());
                     bExtraction = true;
                     break;
 
@@ -351,15 +352,24 @@ int main(int argc, char** argv)
 
 
     // Search the files
-    if (!strSearchPattern.empty())
+    for (const string& strSearchPattern : searchPatterns)
     {
+        auto alreadyFound = [&](const string& fullPath) {
+            for (const auto& r : searchResults)
+                if (r.strFullPath == fullPath) return true;
+            return false;
+        };
+
         if ((strSearchPattern.find("*") == string::npos) && (strSearchPattern.find("?") == string::npos))
         {
-            tSearchResult r;
-            r.strFileName = strSearchPattern.substr(strSearchPattern.find_last_of("\\") + 1);
-            r.strFullPath = strSearchPattern;
+            if (!alreadyFound(strSearchPattern))
+            {
+                tSearchResult r;
+                r.strFileName = strSearchPattern.substr(strSearchPattern.find_last_of("\\") + 1);
+                r.strFullPath = strSearchPattern;
 
-            searchResults.push_back(r);
+                searchResults.push_back(r);
+            }
         }
         else
         {
@@ -377,6 +387,9 @@ int main(int argc, char** argv)
                 do {
                     if (iFileFlags && (findData.dwFileFlags & iFileFlags) != 0)
                          continue;
+
+                    if (alreadyFound(findData.cFileName))
+                        continue;
 
                     cout << "  | " << formatFileFlags(findData.dwFileFlags) << " | " << findData.cFileName << endl;
 
