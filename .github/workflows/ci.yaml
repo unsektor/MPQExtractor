@@ -1,0 +1,101 @@
+name: CI/CD
+
+on:
+    push:
+        tags: [ '*.*.*' ]
+        branches: [ '*' ]
+    pull_request:
+        branches: [ master ]
+    release:
+        types: [ published ]
+
+permissions:
+    contents: write
+    id-token: write
+    packages: write
+
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Setup environment
+              run:  |
+                  git submodule init
+                  git submodule update
+
+            - name: Build
+              run: |
+                  mkdir ./public-build
+                  docker build --target mpq-extractor-debian -t mpq-extractor-debian .
+                  docker cp $(docker create mpq-extractor-debian):/usr/local/bin/MPQExtractor ./public-build/MPQExtractor
+
+            - name: '"Test"'
+              run: |
+                  {
+                    echo '```'
+                    # todo replace with `docker run --rm --entrypoint 'bash -c "cmake /src && make tests"' mpq-extractor-builder-debian` in future,
+                    # now just "print help" to prove this thing working.
+                    docker run --rm mpq-extractor-debian  -h
+                    echo '```' 
+                  } > "$GITHUB_STEP_SUMMARY"
+
+            - name: Save Docker Image to File
+              run:  docker save -o mpq-extractor-debian.tar mpq-extractor-debian
+
+            - name: Upload Image Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docker-image
+                  path: mpq-extractor-debian.tar
+
+            - name: Upload Binary Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: public-build-artifact
+                  path: ./public-build/
+
+    publish:
+        name: Publish
+        runs-on: ubuntu-latest
+        needs: [build]
+        if: startsWith(github.ref, 'refs/tags/')
+
+        steps:
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Download Image Artifact (Docker Image)
+              uses: actions/download-artifact@v4
+              with:
+                  name: docker-image
+
+            - name: Load Image and Push to GHCR
+              run: |
+                  docker load -i mpq-extractor-debian.tar
+
+                  docker tag mpq-extractor-debian ghcr.io/${{ github.repository_owner }}/mpq-extractor-debian:${{ github.ref_name }}
+                  docker tag mpq-extractor-debian ghcr.io/${{ github.repository_owner }}/mpq-extractor-debian:latest
+                  docker push ghcr.io/${{ github.repository_owner }}/mpq-extractor-debian:${{ github.ref_name }}
+                  docker push ghcr.io/${{ github.repository_owner }}/mpq-extractor-debian:latest
+
+            -   name: Download Binary Artifact (MPQExtractor)
+                uses: actions/download-artifact@v4
+                with:
+                    name: public-build-artifact
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: MPQExtractor
+                  generate_release_notes: true
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
