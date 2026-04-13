@@ -2,7 +2,7 @@
 
 A command-line tool to extract files from MPQ archives (used by Blizzard games).
 
-Works on MacOS X, Linux and Windows.
+Works on macOS, Linux and Windows.
 
 
 ## IN CASE OF ERROR (COMPILATION PROBLEMS / EXTRACTION ISSUES)
@@ -180,7 +180,7 @@ inside the MPQ archive:**
 
 ## License
 
-MPQExtractor is is made available under the MIT License. The text of the license is in the file 'LICENSE'.
+MPQExtractor is made available under the MIT License. The text of the license is in the file 'LICENSE'.
 
 Under the MIT License you may use MPQExtractor for any purpose you wish, without warranty, and modify it if you require, subject to one condition:
 
