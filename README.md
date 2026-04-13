@@ -179,71 +179,75 @@ inside the MPQ archive:**
 
 ## Usage with Docker
 
-1. Initialize submodule dependencies
-   ```sh
-   git submodule init
-   git submodule update
-   ```
-2. Build docker image
-   ```sh
-   docker build --target mpq-extractor-debian -t mpq-extractor-debian .
-   ```
+1\. Initialize submodule dependencies
 
-   > [!NOTE]
-   > Typically, building `mpq-extractor-debian` image is required only once.
-   > This image will contain only the built `MPQExtractor` binary,
-   > without build tools like `gcc` or `make`.
-   > Compilation process itself occurs inside the `mpq-extractor-builder-debian` container.
-   > Such design is used to get optimal image.
+```sh
+git submodule init
+git submodule update
+```
 
-   > [!TIP]
-   > When it's required to play with compilation interactively, such command may be used:
-   >
-   > ```sh
-   > docker build --target mpq-extractor-builder-debian -t mpq-extractor-builder-debian .
-   > docker run -it --rm --volume "$PWD:/src" --entrypoint '/bin/bash' mpq-extractor-builder-debian
-   > # ... do something inside the container, for example `cmake /src`
-   > ```
+2\. Build docker image
 
-3. Run binary from container  
-   Synopsis:
-   ```
-   docker run --rm -it mpq-extractor-debian [MPQExtractor ARGUMENTS ...]
-   ```
+```sh
+docker build --target mpq-extractor-debian -t mpq-extractor-debian .
+```
 
-   Print help:
+> [!NOTE]
+> Typically, building `mpq-extractor-debian` image is required only once.
+> This image will contain only the built `MPQExtractor` binary,
+> without build tools like `gcc` or `make`.
+> Compilation process itself occurs inside the `mpq-extractor-builder-debian` container.
+> Such design is used to get optimal image.
 
-   ```sh
-   docker run --rm -it mpq-extractor-debian  -h
-   ```
+> [!TIP]
+> When it's required to play with compilation interactively, such command may be used:
+>
+> ```sh
+> docker build --target mpq-extractor-builder-debian -t mpq-extractor-builder-debian .
+> docker run -it --rm --volume "$PWD:/src" --entrypoint '/bin/bash' mpq-extractor-builder-debian
+> # ... do something inside the container, for example `cmake /src`
+> ```
 
-   > [!NOTE]
-   > Container filesystem is isolated from host filesystem, to make host directories accessible from the container, 
-   > it's required to mount it on `docker run` command invocation, for example:
-   > 
-   > ```sh
-   > export MPQ_DATA_DIR="/home/user/Documents/World of Warcraft 3.3.5a/Data"  # directory on host
-   > export OUT_DATA_DIR="/home/user/Documents/MPQExtractor-output"  # directory on host
-   > 
-   > docker run -it --rm \
-   >   --volume "$MPQ_DATA_DIR:/opt/data" \
-   >   --volume "$OUT_DATA_DIR:/opt/data/out" \
-   >   mpq-extractor-debian \
-   >   -l /opt/data/out/list.txt /opt/data/patch-4.MPQ
-   > 
-   > cat "$OUT_DATA_DIR/list.txt"  # Print file on host (which created in container)
-   > ```
+3\. Run binary from container
 
-   > [!TIP]
-   > Like in example from previous step, when it's required to play with container (containing
-   > the only `MPQExtractor`) interactively, such command may be used:
-   >
-   > ```sh
-   > docker run -it --rm --volume "$PWD:/opt/data" --entrypoint '/bin/bash' mpq-extractor-debian
-   > # ... do something inside the container, for example `MPQExtractor -h`
-   > ```
+Synopsis:
+```
+docker run --rm -it mpq-extractor-debian [MPQExtractor ARGUMENTS ...]
+```
 
-   See [Usage](#usage) section for more usage examples.
+Print help:
+
+```sh
+docker run --rm -it mpq-extractor-debian  -h
+```
+
+> [!NOTE]
+> Container filesystem is isolated from host filesystem, to make host directories accessible from the container, 
+> it's required to mount it on `docker run` command invocation, for example:
+> 
+> ```sh
+> export MPQ_DATA_DIR="/home/user/Documents/World of Warcraft 3.3.5a/Data"  # directory on host
+> export OUT_DATA_DIR="/home/user/Documents/MPQExtractor-output"  # directory on host
+> 
+> docker run -it --rm \
+>   --volume "$MPQ_DATA_DIR:/opt/data" \
+>   --volume "$OUT_DATA_DIR:/opt/data/out" \
+>   mpq-extractor-debian \
+>   -l /opt/data/out/list.txt /opt/data/patch-4.MPQ
+> 
+> cat "$OUT_DATA_DIR/list.txt"  # Print file on host (which created in container)
+> ```
+
+> [!TIP]
+> Like in example from previous step, when it's required to play with container (containing
+> the only `MPQExtractor`) interactively, such command may be used:
+>
+> ```sh
+> docker run -it --rm --volume "$PWD:/opt/data" --entrypoint '/bin/bash' mpq-extractor-debian
+> # ... do something inside the container, for example `MPQExtractor -h`
+> ```
+
+See [Usage](#usage) section for more usage examples.
 
 ## License
 
